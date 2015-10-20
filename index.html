@@ -58,7 +58,7 @@
         var past30DayData = {};
         var past6MonthData = {};
 
-        // 30 day data
+        // 30 day data by day
         MP.api.segment('Launch', 'Device Type', past30Params).done(function(results) {
           $.extend(past30DayData, results.values());
 
