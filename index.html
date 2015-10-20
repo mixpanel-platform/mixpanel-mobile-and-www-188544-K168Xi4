@@ -8,43 +8,69 @@
   </head>
   <body class="mixpanel-platform-body">
     <div class="mixpanel-platform-section">
-      <div id="eventSelect" style="float: left;"></div>
-      <div id="by" class="mixpanel-platform-label" style="margin-left: 10px; display: none;">by</div>
-      <div id="propSelect" style="float: left;"></div>
-      <div id="dateSelect" style="float: right;"></div>
       <div style="clear: both;"></div>
-      <div id="graph"></div>
+      <div id="30DayBar"></div>
+      <div id="30DayTable"></div>
     </div>
-    <div id="table"></div>
+    <div class="mixpanel-platform-section">
+      <div style="clear: both;"></div>
+      <div id="6MonthBar"></div>
+      <div id="6MonthLine"></div>
+      <div id="6MonthTable"></div>
+    </div>
     <script>
-      var eventSelect = $('#eventSelect').MPEventSelect();
-      var propSelect  = $('#propSelect').MPPropertySelect();
-      var dateSelect  = $('#dateSelect').MPDatepicker();
-      var eventGraph  = $('#graph').MPChart({chartType: 'line'});
-      var eventTable  = $('#table').MPTable({
+      var past30DayBar  = $('#30DayBar').MPChart({chartType: 'bar'});
+      var past30DayTable  = $('#30DayTable').MPTable({
         showPercentages: true,
-        firstColHeader: 'Event'
+        firstColHeader: 'Device'
       });
+      var past6MonthBar  = $('#6MonthBar').MPChart({chartType: 'bar'});
+      var past6MonthLine  = $('#6MonthLine').MPChart({chartType: 'line'});
+      var past6MonthTable  = $('#6MonthTable').MPTable({
+        showPercentages: true,
+        firstColHeader: 'Device'
+      });
+      
+      var past30Params = {
+            from: moment().subtract(30, 'days'),
+            to: moment(),
+            type: 'unique'
+          }
+          past6Params = {
+            from: moment().subtract(6, 'months'),
+            to: moment(),
+            type: 'unique'
+          }
 
       var runQuery = function() {
-        var eventName = eventSelect.MPEventSelect('value'),
-            propName  = propSelect.MPPropertySelect('value'),
-            dateRange = dateSelect.MPDatepicker('value');
+        var past30DayData = {};
+        var past6MonthData = {};
 
-        if (eventName) {
-          MP.api.segment(eventName, propName, dateRange).done(function(results) {
-            eventGraph.MPChart('setData', results);
-            eventTable.MPTable('setData', results);
+        MP.api.segment('Launch', 'Device Type', past30Params).done(function(results) {
+          $.extend(past30DayData, results.values());
+
+          MP.api.segment('Resume', 'Device Type', past30Params).done(function(results) {
+            var data = results.values();
+            var devices = Object.keys(data);
+            for (var i = 0; i < devices.length; i++) {
+              var dates = Object.keys(data[devices[i]]);
+              for (var j = 0; j < dates.length; j++) {
+                past30DayData[devices[i]][dates[j]] += data[devices[i]][dates[j]];
+              }
+            }
+            
+            if (past30DayData.hasOwnProperty('iPod')) {
+              delete past30DayData['iPod'];
+            }
+            console.log(past30DayData);
+            past30DayBar.MPChart('setData', past30DayData);
+            past30DayTable.MPTable('setData', past30DayData);
           });
-        }
+        });
       };
-      eventSelect.on('change', function(e, eventName) {
-        propSelect.MPPropertySelect('setEvent', eventName);
-        $("#by").show();
-        runQuery();
-      });
-      propSelect.on('change', runQuery);
-      dateSelect.on('change', runQuery);
+      
+      runQuery();
+      
     </script>
   </body>
 </html>
